@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="theme-color" content="#12100e">
+<title>Dead Frequency</title>
+<meta name="description" content="Answer a few questions and find the Grateful Dead song that matches your mood.">
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --soil:      #12100e;   /* background — dark loam */
+    --bark:      #1e1a16;   /* card / box background */
+    --peat:      #2c2520;   /* button resting bg */
+    --umber:     #5c4a38;   /* borders */
+    --driftwood: #8a7560;   /* secondary / muted text */
+    --flax:      #c4aa82;   /* primary readable text */
+    --sage:      #7a8c6e;   /* accent — muted green */
+    --rust:      #8c5030;   /* accent — warm rust for highlights */
+    --amber:     #a07840;   /* gold-ish accent */
+  }
+
+  html {
+    height: 100%;
+    font-size: 140%;
+  }
+
+  body {
+    background-color: var(--soil);
+    color: var(--flax);
+    font-family: 'Crimson Pro', serif;
+    min-height: 100%;
+    /* SCROLL FIX: allow natural scroll on mobile */
+    overflow-y: auto;
+    overflow-x: hidden;
+    position: relative;
+  }
+
+  /* Grain texture overlay — fixed so it doesn't scroll */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E");
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .app {
+    position: relative;
+    z-index: 1;
+    width: min(580px, 94vw);
+    margin: 0 auto;
+    text-align: center;
+    padding: 3rem 1.2rem 4rem;
+  }
+
+  /* ── SKULL ── */
+  .skull-wrap {
+    width: 130px;
+    height: 130px;
+    margin: 0 auto 2rem;
+  }
+
+  .skull-svg {
+    width: 130px;
+    height: 130px;
+    opacity: 0.88;
+  }
+
+  /* ── HEADER ── */
+  .brand {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(1.4rem, 5vw, 2rem);
+    font-weight: 900;
+    letter-spacing: 0.1em;
+    color: var(--flax);
+    margin-bottom: 0.3rem;
+  }
+
+  .tagline {
+    font-size: 0.82rem;
+    letter-spacing: 0.32em;
+    text-transform: uppercase;
+    color: var(--driftwood);
+    margin-bottom: 2.8rem;
+  }
+
+  /* ── SCREENS ── */
+  .screen { display: none; }
+  .screen.active { display: block; animation: fadeUp 0.4s ease both; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(14px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  /* ── QUESTION ── */
+  .question {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: clamp(1.35rem, 4.5vw, 1.85rem);
+    font-weight: 400;
+    color: var(--flax);
+    margin-bottom: 0.5rem;
+    line-height: 1.4;
+  }
+
+  .sub {
+    font-size: 1.05rem;
+    color: var(--driftwood);
+    font-style: italic;
+    margin-bottom: 2rem;
+  }
+
+  /* ── MOOD GRID ── */
+  .mood-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.75rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .mood-btn {
+    background: var(--peat);
+    border: 1px solid var(--umber);
+    color: var(--flax);
+    font-family: 'Crimson Pro', serif;
+    font-size: 1.1rem;
+    padding: 1rem 1rem;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: border-color 0.2s, background 0.2s;
+    text-align: left;
+    min-width: 0;
+    overflow-wrap: break-word;
+  }
+
+  .mood-btn:hover,
+  .mood-btn:active {
+    border-color: var(--amber);
+    background: #231e18;
+  }
+
+  .mood-btn .emoji  { font-size: 1.4rem; display: block; margin-bottom: 0.3rem; }
+  .mood-btn .label  { font-weight: 400; display: block; font-size: 1.08rem; color: var(--flax); }
+  .mood-btn .desc   { font-size: 0.86rem; color: var(--driftwood); font-style: italic; display: block; margin-top: 0.18rem; }
+
+  /* ── AMBIANCE LIST ── */
+  .ambiance-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 0.65rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .amb-btn {
+    background: var(--peat);
+    border: 1px solid var(--umber);
+    color: var(--flax);
+    font-family: 'Crimson Pro', serif;
+    font-size: 1.1rem;
+    padding: 1rem 1.2rem;
+    cursor: pointer;
+    border-radius: 3px;
+    transition: border-color 0.2s, background 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    text-align: left;
+  }
+
+  .amb-btn:hover,
+  .amb-btn:active {
+    border-color: var(--amber);
+    background: #231e18;
+  }
+
+  .amb-btn .amb-icon { font-size: 1.5rem; flex-shrink: 0; }
+  .amb-btn .amb-name { font-size: 1.08rem; color: var(--flax); }
+  .amb-btn .amb-note { font-size: 0.88rem; color: var(--driftwood); font-style: italic; margin-top: 0.12rem; }
+
+  /* ── SONG CARDS ── */
+  .song-cards {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+    margin-bottom: 2rem;
+  }
+
+  .song-card {
+    background: var(--bark);
+    border: 1px solid var(--umber);
+    border-left: 3px solid var(--rust);
+    border-radius: 3px;
+    padding: 1.3rem 1.4rem;
+    text-align: left;
+  }
+
+  .song-num {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.68rem;
+    letter-spacing: 0.28em;
+    color: var(--rust);
+    text-transform: uppercase;
+    margin-bottom: 0.35rem;
+  }
+
+  .song-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.2rem;
+    color: var(--flax);
+    margin-bottom: 0.45rem;
+  }
+
+  .song-why {
+    font-size: 1rem;
+    color: var(--driftwood);
+    font-style: italic;
+    margin-bottom: 1rem;
+    line-height: 1.6;
+  }
+
+  .play-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.45rem;
+    background: none;
+    border: 1px solid var(--umber);
+    color: var(--amber);
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.95rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.5rem 1.1rem;
+    cursor: pointer;
+    border-radius: 2px;
+    text-decoration: none;
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .play-btn:hover {
+    border-color: var(--amber);
+    color: var(--flax);
+  }
+
+  /* ── DIVIDER ── */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    margin: 2rem 0;
+    color: var(--umber);
+    font-size: 0.75rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--umber);
+    opacity: 0.5;
+  }
+
+  /* ── RESTART ── */
+  .restart-btn {
+    background: none;
+    border: none;
+    color: var(--driftwood);
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.95rem;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.2s;
+    padding: 0.5rem;
+  }
+  .restart-btn:hover { color: var(--flax); }
+
+  /* ── OVERLAY ── */
+  .overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(10, 8, 6, 0.92);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    overflow-y: auto;
+  }
+  .overlay.open { display: flex; }
+
+  .overlay-box {
+    background: var(--bark);
+    border: 1px solid var(--umber);
+    border-radius: 4px;
+    padding: 2.2rem 1.8rem;
+    width: min(500px, 100%);
+    text-align: center;
+    animation: scaleIn 0.3s ease both;
+  }
+
+  @keyframes scaleIn {
+    from { transform: scale(0.94); opacity: 0; }
+    to   { transform: scale(1); opacity: 1; }
+  }
+
+  .overlay-title {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 1.1rem;
+    color: var(--amber);
+    margin-bottom: 0.4rem;
+  }
+
+  .overlay-subtitle {
+    font-size: 0.95rem;
+    color: var(--driftwood);
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    margin-bottom: 1.5rem;
+  }
+
+  .overlay-text {
+    font-size: 1.05rem;
+    line-height: 1.75;
+    color: var(--flax);
+    margin-bottom: 1.6rem;
+    font-style: italic;
+  }
+
+  .overlay-close {
+    background: var(--peat);
+    border: 1px solid var(--umber);
+    color: var(--flax);
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.16em;
+    padding: 0.65rem 1.7rem;
+    cursor: pointer;
+    border-radius: 2px;
+    transition: border-color 0.2s, background 0.2s;
+  }
+  .overlay-close:hover { border-color: var(--amber); background: #231e18; }
+
+  .highlight-mood {
+    color: var(--amber);
+    font-style: normal;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <!-- SKULL LOGO -->
+  <div class="skull-wrap">
+    <svg class="skull-svg" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <!-- Skull outline -->
+      <path d="M70 10 C35 10 18 32 18 58 C18 75 26 88 38 95 L38 115 C38 118 40.5 120 43 120 L97 120 C99.5 120 102 118 102 115 L102 95 C114 88 122 75 122 58 C122 32 105 10 70 10Z" fill="#1e1a16" stroke="#5c4a38" stroke-width="1.5"/>
+      <!-- Jaw line teeth -->
+      <line x1="50" y1="120" x2="50" y2="130" stroke="#5c4a38" stroke-width="1.2"/>
+      <line x1="62" y1="120" x2="62" y2="132" stroke="#5c4a38" stroke-width="1.2"/>
+      <line x1="74" y1="120" x2="74" y2="132" stroke="#5c4a38" stroke-width="1.2"/>
+      <line x1="86" y1="120" x2="86" y2="130" stroke="#5c4a38" stroke-width="1.2"/>
+      <!-- Eye sockets -->
+      <ellipse cx="52" cy="62" rx="13" ry="14" fill="#12100e" stroke="#5c4a38" stroke-width="1"/>
+      <ellipse cx="88" cy="62" rx="13" ry="14" fill="#12100e" stroke="#5c4a38" stroke-width="1"/>
+      <!-- Nose cavity -->
+      <path d="M64 84 L70 76 L76 84 L72 88 L68 88 Z" fill="#12100e" stroke="#5c4a38" stroke-width="0.8"/>
+      <!-- Lightning bolt — rust/amber, no glow -->
+      <path d="M73 44 L66 66 L72 66 L67 88 L81 60 L74 60 L80 44 Z" fill="#8c5030" opacity="0.9"/>
+      <path d="M73 44 L66 66 L72 66 L67 88 L81 60 L74 60 L80 44 Z" stroke="#a07840" stroke-width="0.6" fill="none"/>
+      <!-- Crown detail -->
+      <path d="M42 28 L50 18 L58 30 L70 16 L82 30 L90 18 L98 28" stroke="#5c4a38" stroke-width="1" fill="none" opacity="0.6"/>
+    </svg>
+  </div>
+
+  <h1 class="brand">Dead Frequency</h1>
+  <p class="tagline">Find your song in the static</p>
+
+  <!-- SCREEN 1: HOW ARE YOU -->
+  <div class="screen active" id="screen-mood">
+    <p class="question">How are you?</p>
+    <p class="sub">Be honest with the cosmos.</p>
+    <div class="mood-grid">
+      <button class="mood-btn" onclick="selectMood('lost','🌫️','Lost in the fog')">
+        <span class="emoji">🌫️</span>
+        <span class="label">Lost in the fog</span>
+        <span class="desc">Drifting, unmoored, searching</span>
+      </button>
+      <button class="mood-btn" onclick="selectMood('electric','⚡','Electric & alive')">
+        <span class="emoji">⚡</span>
+        <span class="label">Electric & alive</span>
+        <span class="desc">High energy, restless, ready</span>
+      </button>
+      <button class="mood-btn" onclick="selectMood('tender','🌙','Tender & open')">
+        <span class="emoji">🌙</span>
+        <span class="label">Tender & open</span>
+        <span class="desc">Soft, feeling a lot, present</span>
+      </button>
+      <button class="mood-btn" onclick="selectMood('worn','🍂','Worn & weathered')">
+        <span class="emoji">🍂</span>
+        <span class="label">Worn & weathered</span>
+        <span class="desc">Heavy, road-tired, world-wise</span>
+      </button>
+      <button class="mood-btn" onclick="selectMood('grateful','✨','Quietly grateful')">
+        <span class="emoji">✨</span>
+        <span class="label">Quietly grateful</span>
+        <span class="desc">Warm, at peace, full</span>
+      </button>
+      <button class="mood-btn" onclick="selectMood('chaos','🔥','Beautiful chaos')">
+        <span class="emoji">🔥</span>
+        <span class="label">Beautiful chaos</span>
+        <span class="desc">Wild, uncontained, burning</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- SCREEN 2: AMBIANCE -->
+  <div class="screen" id="screen-ambiance">
+    <p class="question">Choose your ambiance</p>
+    <p class="sub" id="ambiance-sub">What kind of journey calls to you?</p>
+    <div class="ambiance-grid" id="ambiance-grid">
+      <!-- populated by JS -->
+    </div>
+  </div>
+
+  <!-- SCREEN 3: SONGS -->
+  <div class="screen" id="screen-songs">
+    <p class="question" style="margin-bottom:0.4rem">Your songs await.</p>
+    <p class="sub" id="songs-sub"></p>
+    <div class="song-cards" id="song-cards"></div>
+    <div class="divider">the road goes on forever</div>
+    <button class="restart-btn" onclick="restart()">↩ Begin again</button>
+  </div>
+
+</div>
+
+<!-- REFLECTION OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="overlay-box">
+    <div class="overlay-title">A Moment of Reflection</div>
+    <div class="overlay-subtitle" id="overlay-mood-label"></div>
+    <p class="overlay-text" id="overlay-text"></p>
+    <button class="overlay-close" onclick="closeOverlay()">I'm ready to choose →</button>
+  </div>
+</div>
+
+<script>
+const MOODS = {
+  lost: {
+    label: 'Lost in the Fog',
+    reflection: `When you're adrift, the Dead don't offer directions — they offer company. Their songs know what it is to wander without a map, to trust that the turning will come. There is wisdom in your fog.`,
+    ambianceOptions: ['psychedelic', 'cosmic', 'haunting']
+  },
+  electric: {
+    label: 'Electric & Alive',
+    reflection: `This is the energy of the second set, the moment the band locks in and the whole room levitates. You are already in the music. What remains is to let it roar.`,
+    ambianceOptions: ['jamming', 'danceable', 'cosmic']
+  },
+  tender: {
+    label: 'Tender & Open',
+    reflection: `Jerry's sweetest notes were written for nights exactly like yours. The Dead had a rare gift for the vulnerable and the quiet — songs that hold you without crushing you.`,
+    ambianceOptions: ['acoustic', 'haunting', 'soulful']
+  },
+  worn: {
+    label: 'Worn & Weathered',
+    reflection: `You carry miles in your eyes. The Dead understood this too — these were songs built on the road, shaped by impermanence and the grace of showing up anyway.`,
+    ambianceOptions: ['soulful', 'acoustic', 'haunting']
+  },
+  grateful: {
+    label: 'Quietly Grateful',
+    reflection: `The rarest mood of all. The Dead wrote songs for exactly this: the simple, almost holy feeling of being alive and knowing it. Let the music celebrate with you.`,
+    ambianceOptions: ['danceable', 'soulful', 'acoustic']
+  },
+  chaos: {
+    label: 'Beautiful Chaos',
+    reflection: `You are the storm and the eye simultaneously. The Dead at their most unhinged were playing directly to this frequency — dissonance that resolves into something transcendent.`,
+    ambianceOptions: ['jamming', 'psychedelic', 'cosmic']
+  }
+};
+
+const AMBIANCEDATA = {
+  psychedelic: { icon: '🌀', name: 'Psychedelic & Spiraling', note: 'Untethered, layered, strange beauty' },
+  cosmic: { icon: '🌌', name: 'Cosmic & Expansive', note: 'Wide open, infinite, star-bound' },
+  haunting: { icon: '🕯️', name: 'Haunting & Spectral', note: 'Otherworldly, ghostly, deeply felt' },
+  jamming: { icon: '🎸', name: 'Full-Tilt Jamming', note: 'Peak intensity, no ceiling, pure velocity' },
+  danceable: { icon: '🌊', name: 'Danceable & Joyful', note: 'Irresistible groove, loose limbs, open heart' },
+  acoustic: { icon: '🌿', name: 'Acoustic & Intimate', note: 'Close and warm, rootsy, unhurried' },
+  soulful: { icon: '🕊️', name: 'Soulful & Worn', note: 'Gospel-touched, blues-drenched, earned' }
+};
+
+const SONGS = {
+  lost_psychedelic: [
+    { title: 'Dark Star', why: 'The Grateful Dead\'s great open question — endlessly searching, never resolving, always arriving somewhere unexpected.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Dark+Star' },
+    { title: 'The Other One', why: 'A spiral you can\'t climb out of. Every fog deserves this kind of mythic thunder beneath it.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+The+Other+One' }
+  ],
+  lost_cosmic: [
+    { title: 'Dark Star', why: 'A universe with no edges — perfect for feeling small and vast at the same time.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Dark+Star' },
+    { title: 'Terrapin Station', why: 'A narrative that rises into something mythological — a map drawn in starlight.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Terrapin+Station' }
+  ],
+  lost_haunting: [
+    { title: 'Attics of My Life', why: 'The most interior Grateful Dead song ever written. It reaches rooms inside you that others can\'t find.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Attics+of+My+Life' },
+    { title: 'Stella Blue', why: 'The sound of sitting alone at last call, and finding it beautiful rather than sad.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Stella+Blue' }
+  ],
+  electric_jamming: [
+    { title: 'Playing in the Band', why: 'Built for combustion. At its peak, it dismantles physics and reassembles them better.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Playing+in+the+Band+live' },
+    { title: 'Eyes of the World', why: 'Funky, luminous, unstoppable — the happiest the Dead ever sounded in full flight.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Eyes+of+the+World' }
+  ],
+  electric_cosmic: [
+    { title: 'St. Stephen', why: 'Compressed chaos barely held together — every performance a controlled detonation.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+St+Stephen' },
+    { title: 'The Other One', why: 'Your electricity deserves a song that matches it, note for note and volt for volt.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+The+Other+One' }
+  ],
+  electric_danceable: [
+    { title: 'Shakedown Street', why: 'Disco-era Dead at full strut — for when electricity becomes pure body.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Shakedown+Street' },
+    { title: 'Estimated Prophet', why: 'Odd meter, hypnotic groove, visionary intensity — electric and grounded at once.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Estimated+Prophet' }
+  ],
+  tender_acoustic: [
+    { title: 'Friend of the Devil', why: 'Bittersweet and honest, like a conversation with someone you love who\'s leaving soon.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Friend+of+the+Devil' },
+    { title: 'Brokedown Palace', why: 'A farewell that somehow contains all the love of a lifetime. Bring tissues.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Brokedown+Palace' }
+  ],
+  tender_haunting: [
+    { title: 'Attics of My Life', why: 'Voices intertwined like memory and longing — the tenderest music the Dead ever made.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Attics+of+My+Life' },
+    { title: 'Ripple', why: 'Philosophy disguised as a lullaby. The Dead telling you: the ripple still reaches shore.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Ripple' }
+  ],
+  tender_soulful: [
+    { title: 'Wharf Rat', why: 'A character study of forgiveness and redemption — Jerry\'s voice like a hand extended.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Wharf+Rat' },
+    { title: 'To Lay Me Down', why: 'A love song almost too intimate to hear in public. Tenderness in its purest form.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+To+Lay+Me+Down' }
+  ],
+  worn_soulful: [
+    { title: 'Wharf Rat', why: 'For the miles behind you and the grace to keep moving anyway. This song knows your name.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Wharf+Rat' },
+    { title: 'Black Peter', why: 'A song about the end of the road that somehow feels like permission to rest.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Black+Peter' }
+  ],
+  worn_acoustic: [
+    { title: 'Dire Wolf', why: 'A wry, weary ballad for those who\'ve played enough hands to know the score.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Dire+Wolf' },
+    { title: 'Friend of the Devil', why: 'Running and running and knowing it — and finding the running beautiful.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Friend+of+the+Devil' }
+  ],
+  worn_haunting: [
+    { title: 'Stella Blue', why: 'Everything that has passed through you, condensed into one perfect, aching melody.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Stella+Blue' },
+    { title: 'Black Peter', why: 'Worn beyond words. This song sits beside you without asking anything of you.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Black+Peter' }
+  ],
+  grateful_danceable: [
+    { title: 'Eyes of the World', why: 'The Grateful Dead\'s anthem of presence — seeing clearly, moving freely, alive.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Eyes+of+the+World' },
+    { title: 'Scarlet Begonias', why: 'A song about luck and wonder disguised as perfect rhythm. Made for your mood exactly.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Scarlet+Begonias' }
+  ],
+  grateful_soulful: [
+    { title: 'Ripple', why: 'The Dead\'s most direct expression of gratitude — to the music, to the universe, to you.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Ripple' },
+    { title: 'Sugar Magnolia', why: 'Pure joy with flowers in its hair. This song is what feeling grateful sounds like.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Sugar+Magnolia' }
+  ],
+  grateful_acoustic: [
+    { title: 'Brokedown Palace', why: 'Gratitude that includes sorrow — the fullest kind. Like holding everything at once.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Brokedown+Palace' },
+    { title: 'Ripple', why: 'The universe rippling back to you because you stayed open. Perfect song for this moment.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Ripple' }
+  ],
+  chaos_jamming: [
+    { title: 'The Other One', why: 'Controlled demolition. A song that falls apart and re-forms stronger every single time.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+The+Other+One' },
+    { title: 'Playing in the Band', why: 'Structured like chaos, chaotic like structure — perfectly matched to your frequency.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Playing+in+the+Band' }
+  ],
+  chaos_psychedelic: [
+    { title: 'Dark Star', why: 'The original beautiful disaster — music that dissolves its own edges and rebuilds them as sound.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Dark+Star' },
+    { title: 'St. Stephen', why: 'Strange and relentless, asking questions that answers only deepen.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+St+Stephen' }
+  ],
+  chaos_cosmic: [
+    { title: 'Terrapin Station', why: 'A story-suite that reaches mythic scale — chaos organized into something transcendent.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Terrapin+Station' },
+    { title: 'Dark Star', why: 'Your chaos deserves the greatest open form in rock music. Let it take you somewhere new.', youtube: 'https://www.youtube.com/results?search_query=Grateful+Dead+Dark+Star' }
+  ]
+};
+
+let currentMood = null;
+
+function selectMood(mood, emoji, label) {
+  currentMood = mood;
+  const moodData = MOODS[mood];
+  document.getElementById('overlay-mood-label').innerHTML = `<span class="highlight-mood">${emoji} ${label}</span>`;
+  document.getElementById('overlay-text').textContent = moodData.reflection;
+  document.getElementById('overlay').classList.add('open');
+}
+
+function closeOverlay() {
+  document.getElementById('overlay').classList.remove('open');
+  showAmbiance();
+}
+
+function showAmbiance() {
+  const moodData = MOODS[currentMood];
+  const grid = document.getElementById('ambiance-grid');
+  grid.innerHTML = '';
+
+  moodData.ambianceOptions.forEach(key => {
+    const a = AMBIANCEDATA[key];
+    const btn = document.createElement('button');
+    btn.className = 'amb-btn';
+    btn.innerHTML = `
+      <span class="amb-icon">${a.icon}</span>
+      <div>
+        <div class="amb-name">${a.name}</div>
+        <div class="amb-note">${a.note}</div>
+      </div>
+    `;
+    btn.onclick = () => showSongs(key);
+    grid.appendChild(btn);
+  });
+
+  switchScreen('screen-ambiance');
+}
+
+function showSongs(ambiance) {
+  const key = `${currentMood}_${ambiance}`;
+  const songs = SONGS[key] || SONGS[`${currentMood}_${MOODS[currentMood].ambianceOptions[0]}`];
+  const a = AMBIANCEDATA[ambiance];
+
+  document.getElementById('songs-sub').textContent = `${a.icon} ${a.name}`;
+
+  const container = document.getElementById('song-cards');
+  container.innerHTML = '';
+
+  songs.forEach((song, i) => {
+    const card = document.createElement('div');
+    card.className = 'song-card';
+    card.innerHTML = `
+      <div class="song-num">Track ${i + 1}</div>
+      <div class="song-title">${song.title}</div>
+      <p class="song-why">${song.why}</p>
+      <a class="play-btn" href="${song.youtube}" target="_blank" rel="noopener">
+        ▶ Listen on YouTube
+      </a>
+    `;
+    container.appendChild(card);
+  });
+
+  switchScreen('screen-songs');
+}
+
+function switchScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  const target = document.getElementById(id);
+  target.classList.remove('active');
+  void target.offsetWidth;
+  target.classList.add('active');
+}
+
+function restart() {
+  currentMood = null;
+  switchScreen('screen-mood');
+}
+</script>
+</body>
+</html>
