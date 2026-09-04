@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700;900&family=Crimson+Pro:ital,wght@0,300;0,400;1,300;1,400&display=swap');
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  :root {
+    --soil:      #12100e;
+    --bark:      #1e1a16;
+    --umber:     #5c4a38;
+    --driftwood: #8a7560;
+    --flax:      #c4aa82;
+    --rust:      #8c5030;
+    --amber:     #a07840;
+  }
+
+  body {
+    width: 1200px; height: 630px;
+    background: var(--soil);
+    font-family: 'Crimson Pro', serif;
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    overflow: hidden;
+  }
+
+  body::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23g)' opacity='0.055'/%3E%3C/svg%3E");
+  }
+
+  .glow {
+    position: absolute;
+    width: 700px; height: 700px;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    background: radial-gradient(circle, rgba(140,80,48,0.18) 0%, rgba(140,80,48,0) 70%);
+  }
+
+  .content {
+    display: flex; flex-direction: column; align-items: center; text-align: center;
+    position: relative; z-index: 1;
+  }
+
+  .brand {
+    font-family: 'Cinzel Decorative', serif;
+    font-size: 58px;
+    font-weight: 900;
+    letter-spacing: 0.08em;
+    color: var(--flax);
+    margin-top: 22px;
+  }
+
+  .tagline {
+    font-size: 24px;
+    letter-spacing: 0.28em;
+    text-transform: uppercase;
+    color: var(--driftwood);
+    margin-top: 14px;
+  }
+
+  .sub {
+    font-size: 22px;
+    font-style: italic;
+    color: var(--driftwood);
+    margin-top: 30px;
+    max-width: 620px;
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <div class="glow"></div>
+
+  <div class="content">
+    <svg width="150" height="150" viewBox="0 0 140 140" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <path d="M70 10 C35 10 18 32 18 58 C18 75 26 88 38 95 L38 115 C38 118 40.5 120 43 120 L97 120 C99.5 120 102 118 102 115 L102 95 C114 88 122 75 122 58 C122 32 105 10 70 10Z" fill="#1e1a16" stroke="#5c4a38" stroke-width="1.5"/>
+      <line x1="50" y1="120" x2="50" y2="130" stroke="#5c4a38" stroke-width="1.2"/>
+      <line x1="62" y1="120" x2="62" y2="132" stroke="#5c4a38" stroke-width="1.2"/>
+      <line x1="74" y1="120" x2="74" y2="132" stroke="#5c4a38" stroke-width="1.2"/>
+      <line x1="86" y1="120" x2="86" y2="130" stroke="#5c4a38" stroke-width="1.2"/>
+      <ellipse cx="52" cy="62" rx="13" ry="14" fill="#12100e" stroke="#5c4a38" stroke-width="1"/>
+      <ellipse cx="88" cy="62" rx="13" ry="14" fill="#12100e" stroke="#5c4a38" stroke-width="1"/>
+      <path d="M64 84 L70 76 L76 84 L72 88 L68 88 Z" fill="#12100e" stroke="#5c4a38" stroke-width="0.8"/>
+      <path d="M73 44 L66 66 L72 66 L67 88 L81 60 L74 60 L80 44 Z" fill="#8c5030" opacity="0.9"/>
+      <path d="M73 44 L66 66 L72 66 L67 88 L81 60 L74 60 L80 44 Z" stroke="#a07840" stroke-width="0.6" fill="none"/>
+      <path d="M42 28 L50 18 L58 30 L70 16 L82 30 L90 18 L98 28" stroke="#5c4a38" stroke-width="1" fill="none" opacity="0.6"/>
+    </svg>
+    <div class="brand">DEAD FREQUENCY</div>
+    <div class="tagline">Find your song in the static</div>
+    <div class="sub">Answer a few questions about your mood — get matched to the Grateful Dead song that fits it.</div>
+  </div>
+</body>
+</html>
